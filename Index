@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amigos Bet</title>
+
+  <!-- Firebase SDK v9 (MODULAR) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    // 🔥 CONFIGURAÇÃO FIREBASE (SUA)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGSD4g3CwqNobqpHMFDuJ1gue81-DBe-g",
+      authDomain: "teste-31b5b.firebaseapp.com",
+      databaseURL: "https://teste-31b5b-default-rtdb.firebaseio.com",
+      projectId: "teste-31b5b",
+      storageBucket: "teste-31b5b.firebasestorage.app",
+      messagingSenderId: "177535528848",
+      appId: "1:177535528848:web:7ad967eced6b2e835a4d15"
+    };
+
+    // Inicializa Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const betsRef = ref(db, 'bets');
+
+    // Expondo para uso no HTML
+    window.firebaseAPI = { push, onValue, betsRef };
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: auto;
+      padding: 16px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .game {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+
+    .prize {
+      background: #fff;
+      color: #000;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 14px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #fff;
+      background: #000;
+      color: #fff;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      background: #fff;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .score-select {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .bets {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .bets li {
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Amigos Bet</h1>
+
+    <div class="game">⚽ Vasco x Corinthians</div>
+
+    <div class="prize" id="prize">Prêmio atual: R$ 0,00</div>
+
+    <label>Seu nome</label>
+    <input type="text" id="name" placeholder="Digite seu nome" />
+
+    <label>Placar exato</label>
+    <div class="score-select">
+      <select id="scoreHome"></select>
+      <select id="scoreAway"></select>
+    </div>
+
+    <label>Valor da aposta</label>
+    <select id="value">
+      <option value="5">R$ 5</option>
+      <option value="10">R$ 10</option>
+    </select>
+
+    <button onclick="addBet()">Fazer aposta</button>
+
+    <div class="bets">
+      <strong>Apostas realizadas:</strong>
+      <ul id="betList"></ul>
+    </div>
+  </div>
+
+  <script>
+    // Preenche placares 0 a 6
+    const home = document.getElementById('scoreHome');
+    const away = document.getElementById('scoreAway');
+    for (let i = 0; i <= 6; i++) {
+      home.innerHTML += `<option value="${i}">${i}</option>`;
+      away.innerHTML += `<option value="${i}">${i}</option>`;
+    }
+
+    // Lê apostas em tempo real
+    firebaseAPI.onValue(firebaseAPI.betsRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      let total = 0;
+      const list = document.getElementById('betList');
+      list.innerHTML = '';
+
+      Object.values(data).forEach(bet => {
+        total += bet.value;
+        const li = document.createElement('li');
+        li.innerText = `${bet.name} → ${bet.score} (R$ ${bet.value})`;
+        list.appendChild(li);
+      });
+
+      document.getElementById('prize').innerText = `Prêmio atual: R$ ${total.toFixed(2)}`;
+    });
+
+    // Envia aposta
+    function addBet() {
+      const name = document.getElementById('name').value.trim();
+      const score = `${home.value} x ${away.value}`;
+      const value = Number(document.getElementById('value').value);
+
+      if (!name) {
+        alert('Digite seu nome');
+        return;
+      }
+
+      firebaseAPI.push(firebaseAPI.betsRef, {
+        name,
+        score,
+        value,
+        createdAt: Date.now()
+      });
+
+      document.getElementById('name').value = '';
+    }
+  </script>
+</body>
+</html>
