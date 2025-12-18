@@ -24,75 +24,24 @@
     const db = getDatabase(app);
     const betsRef = ref(db, 'bets');
 
-    window.firebaseAPI = { push, onValue, betsRef };
+    // expõe Firebase de forma segura
+    window.firebaseReady = true;
+    window.betsRef = betsRef;
+    window.fbPush = push;
+    window.fbOnValue = onValue;
   </script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #000;
-      color: #fff;
-    }
-
-    .container {
-      max-width: 420px;
-      margin: auto;
-      padding: 16px;
-    }
-
-    h1 { text-align: center; }
-
-    .game {
-      text-align: center;
-      font-size: 18px;
-      margin-bottom: 15px;
-    }
-
-    .prize {
-      background: #fff;
-      color: #000;
-      padding: 12px;
-      border-radius: 10px;
-      text-align: center;
-      font-weight: bold;
-      margin-bottom: 20px;
-    }
-
+    body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#000; color:#fff; }
+    .container { max-width:420px; margin:auto; padding:16px; }
+    h1 { text-align:center; }
+    .game { text-align:center; font-size:18px; margin-bottom:15px; }
+    .prize { background:#fff; color:#000; padding:12px; border-radius:10px; text-align:center; font-weight:bold; margin-bottom:20px; }
     label { display:block; margin-bottom:6px; font-size:14px; }
-
-    input, select, button {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #fff;
-      background: #000;
-      color: #fff;
-      font-size: 16px;
-      margin-bottom: 12px;
-    }
-
-    button {
-      background: #fff;
-      color: #000;
-      font-weight: bold;
-    }
-
-    .score-select {
-      display: flex;
-      gap: 10px;
-    }
-
-    #confirmBox {
-      display:none;
-      background:#111;
-      border:1px solid #fff;
-      border-radius:10px;
-      padding:12px;
-      margin-top:10px;
-      font-size:14px;
-    }
+    input, select, button { width:100%; box-sizing:border-box; padding:12px; border-radius:8px; border:1px solid #fff; background:#000; color:#fff; font-size:16px; margin-bottom:12px; }
+    button { background:#fff; color:#000; font-weight:bold; }
+    .score-select { display:flex; gap:10px; }
+    #confirmBox { display:none; background:#111; border:1px solid #fff; border-radius:10px; padding:12px; margin-top:10px; font-size:14px; }
   </style>
 </head>
 <body>
@@ -121,51 +70,40 @@
       <option value="10">R$ 10</option>
     </select>
 
-    <button onclick="addBet()">Confirmar aposta</button>
+    <button id="betBtn">Confirmar aposta</button>
 
     <div id="confirmBox"></div>
   </div>
 
   <script>
-    // Preenche placares 0 a 6 (ESTAVA FALTANDO)
+    // garante que os selects SEMPRE aparecem
     const home = document.getElementById('scoreHome');
     const away = document.getElementById('scoreAway');
-
+    home.innerHTML = '';
+    away.innerHTML = '';
     for (let i = 0; i <= 6; i++) {
-      const opt1 = document.createElement('option');
-      opt1.value = i;
-      opt1.textContent = i;
-      home.appendChild(opt1);
-
-      const opt2 = document.createElement('option');
-      opt2.value = i;
-      opt2.textContent = i;
-      away.appendChild(opt2);
+      home.add(new Option(i, i));
+      away.add(new Option(i, i));
     }
 
-    // Atualiza prêmio TOTAL corretamente (aguarda Firebase carregar)
-    function startPrizeListener() {
-      if (!window.firebaseAPI) {
-        setTimeout(startPrizeListener, 100);
+    // espera Firebase carregar para somar prêmio
+    function startPrize() {
+      if (!window.firebaseReady) {
+        setTimeout(startPrize, 100);
         return;
       }
 
-      window.firebaseAPI.onValue(window.firebaseAPI.betsRef, (snapshot) => {
+      window.fbOnValue(window.betsRef, (snapshot) => {
         const data = snapshot.val() || {};
         let total = 0;
-
-        Object.values(data).forEach(bet => {
-          total += Number(bet.value || 0);
-        });
-
+        Object.values(data).forEach(b => total += Number(b.value || 0));
         document.getElementById('prize').innerText = `Prêmio total: R$ ${total.toFixed(2)}`;
       });
     }
+    startPrize();
 
-    startPrizeListener();
-    });
-
-    function addBet() {
+    // confirmação de aposta 100% funcional
+    document.getElementById('betBtn').onclick = () => {
       const name = document.getElementById('name').value.trim();
       const whatsapp = document.getElementById('whatsapp').value.trim();
       const score = `${home.value} x ${away.value}`;
@@ -176,27 +114,16 @@
         return;
       }
 
-      firebaseAPI.push(firebaseAPI.betsRef, {
-        name,
-        whatsapp,
-        score,
-        value,
-        createdAt: Date.now()
-      });
+      window.fbPush(window.betsRef, { name, whatsapp, score, value, createdAt: Date.now() });
 
-      const confirm = document.getElementById('confirmBox');
-      const text = `🎟️ CUPOM AMIGOS BET\n👤 ${name}\n📱 ${whatsapp}\n⚽ Vasco x Corinthians\n📊 Placar: ${score}\n💰 Valor: R$ ${value}\n🕘 Jogo às 21:30`;
-
-      confirm.style.display = 'block';
-      confirm.innerHTML = `
-        <strong>Aposta confirmada! ✅</strong><br><br>
-        <pre style="white-space:pre-wrap">${text}</pre>
-        <a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" style="color:white;text-decoration:underline">Compartilhar no WhatsApp</a>
-      `;
+      const box = document.getElementById('confirmBox');
+      const text = `🎟️ CUPOM AMIGOS BET\n👤 ${name}\n📱 ${whatsapp}\n⚽ Vasco x Corinthians\n📊 ${score}\n💰 R$ ${value}\n🕘 21:30`;
+      box.style.display = 'block';
+      box.innerHTML = `<strong>Aposta confirmada! ✅</strong><br><br><pre style="white-space:pre-wrap">${text}</pre><a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" style="color:white;text-decoration:underline">Compartilhar no WhatsApp</a>`;
 
       document.getElementById('name').value = '';
       document.getElementById('whatsapp').value = '';
-    }
+    };
   </script>
 </body>
 </html>
