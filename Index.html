@@ -10,7 +10,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    // 🔥 CONFIGURAÇÃO FIREBASE (SUA)
     const firebaseConfig = {
       apiKey: "AIzaSyBGSD4g3CwqNobqpHMFDuJ1gue81-DBe-g",
       authDomain: "teste-31b5b.firebaseapp.com",
@@ -21,12 +20,10 @@
       appId: "1:177535528848:web:7ad967eced6b2e835a4d15"
     };
 
-    // Inicializa Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const betsRef = ref(db, 'bets');
 
-    // Expondo para uso no HTML
     window.firebaseAPI = { push, onValue, betsRef };
   </script>
 
@@ -44,10 +41,7 @@
       padding: 16px;
     }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 10px;
-    }
+    h1 { text-align: center; }
 
     .game {
       text-align: center;
@@ -65,11 +59,7 @@
       margin-bottom: 20px;
     }
 
-    label {
-      font-size: 14px;
-      margin-bottom: 6px;
-      display: block;
-    }
+    label { display:block; margin-bottom:6px; font-size:14px; }
 
     input, select, button {
       width: 100%;
@@ -92,16 +82,16 @@
     .score-select {
       display: flex;
       gap: 10px;
-      margin-bottom: 12px;
     }
 
-    .bets {
-      margin-top: 20px;
-      font-size: 14px;
-    }
-
-    .bets li {
-      margin-bottom: 6px;
+    #confirmBox {
+      display:none;
+      background:#111;
+      border:1px solid #fff;
+      border-radius:10px;
+      padding:12px;
+      margin-top:10px;
+      font-size:14px;
     }
   </style>
 </head>
@@ -111,7 +101,7 @@
 
     <div class="game">⚽ Vasco x Corinthians<br><small>🕘 21:30</small></div>
 
-    <div class="prize" id="prize">Prêmio atual: R$ 0,00</div>
+    <div class="prize" id="prize">Prêmio total: R$ 0,00</div>
 
     <label>Seu nome</label>
     <input type="text" id="name" placeholder="Digite seu nome" />
@@ -133,46 +123,46 @@
 
     <button onclick="addBet()">Confirmar aposta</button>
 
-    <div id="confirmBox" style="display:none;background:#111;border:1px solid #fff;border-radius:10px;padding:12px;margin-top:10px;font-size:14px"></div>
-
-    
+    <div id="confirmBox"></div>
   </div>
 
   <script>
-    // Preenche placares 0 a 6
+    // Preenche placares 0 a 6 (ESTAVA FALTANDO)
     const home = document.getElementById('scoreHome');
     const away = document.getElementById('scoreAway');
+
     for (let i = 0; i <= 6; i++) {
-      home.innerHTML += `<option value="${i}">${i}</option>`;
-      away.innerHTML += `<option value="${i}">${i}</option>`;
+      const opt1 = document.createElement('option');
+      opt1.value = i;
+      opt1.textContent = i;
+      home.appendChild(opt1);
+
+      const opt2 = document.createElement('option');
+      opt2.value = i;
+      opt2.textContent = i;
+      away.appendChild(opt2);
     }
 
-    // Lê apostas em tempo real
+    // Atualiza prêmio TOTAL corretamente
     firebaseAPI.onValue(firebaseAPI.betsRef, (snapshot) => {
       const data = snapshot.val() || {};
       let total = 0;
-      const list = document.getElementById('betList');
-      list.innerHTML = '';
 
       Object.values(data).forEach(bet => {
         total += Number(bet.value);
       });
-        li.innerText = `${bet.name} → ${bet.score} (R$ ${bet.value})`;
-        list.appendChild(li);
-      });
 
-      document.getElementById('prize').innerText = `Prêmio atual: R$ ${total.toFixed(2)}`;
+      document.getElementById('prize').innerText = `Prêmio total: R$ ${total.toFixed(2)}`;
     });
 
-    // Envia aposta
     function addBet() {
       const name = document.getElementById('name').value.trim();
       const whatsapp = document.getElementById('whatsapp').value.trim();
       const score = `${home.value} x ${away.value}`;
       const value = Number(document.getElementById('value').value);
 
-      if (!name) {
-        alert('Digite seu nome');
+      if (!name || !whatsapp) {
+        alert('Preencha nome e WhatsApp');
         return;
       }
 
@@ -184,23 +174,18 @@
         createdAt: Date.now()
       });
 
-      document.getElementById('name').value = '';
-
-      // confirmação elaborada + cupom
       const confirm = document.getElementById('confirmBox');
-      const text = `🎟️ CUPOM AMIGOS BET
-👤 ${name}
-⚽ Vasco x Corinthians
-📊 Placar: ${score}
-💰 Valor: R$ ${value}
-🕘 Jogo às 21:30`;
+      const text = `🎟️ CUPOM AMIGOS BET\n👤 ${name}\n📱 ${whatsapp}\n⚽ Vasco x Corinthians\n📊 Placar: ${score}\n💰 Valor: R$ ${value}\n🕘 Jogo às 21:30`;
 
       confirm.style.display = 'block';
       confirm.innerHTML = `
-        <strong>Aposta realizada com sucesso! ✅</strong><br><br>
+        <strong>Aposta confirmada! ✅</strong><br><br>
         <pre style="white-space:pre-wrap">${text}</pre>
         <a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" style="color:white;text-decoration:underline">Compartilhar no WhatsApp</a>
-      `;;
+      `;
+
+      document.getElementById('name').value = '';
+      document.getElementById('whatsapp').value = '';
     }
   </script>
 </body>
