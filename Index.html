@@ -143,16 +143,26 @@
       away.appendChild(opt2);
     }
 
-    // Atualiza prêmio TOTAL corretamente
-    firebaseAPI.onValue(firebaseAPI.betsRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      let total = 0;
+    // Atualiza prêmio TOTAL corretamente (aguarda Firebase carregar)
+    function startPrizeListener() {
+      if (!window.firebaseAPI) {
+        setTimeout(startPrizeListener, 100);
+        return;
+      }
 
-      Object.values(data).forEach(bet => {
-        total += Number(bet.value);
+      window.firebaseAPI.onValue(window.firebaseAPI.betsRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        let total = 0;
+
+        Object.values(data).forEach(bet => {
+          total += Number(bet.value || 0);
+        });
+
+        document.getElementById('prize').innerText = `Prêmio total: R$ ${total.toFixed(2)}`;
       });
+    }
 
-      document.getElementById('prize').innerText = `Prêmio total: R$ ${total.toFixed(2)}`;
+    startPrizeListener();
     });
 
     function addBet() {
