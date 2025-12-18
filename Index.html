@@ -116,6 +116,9 @@
     <label>Seu nome</label>
     <input type="text" id="name" placeholder="Digite seu nome" />
 
+    <label>WhatsApp</label>
+    <input type="tel" id="whatsapp" placeholder="(DDD) 99999-9999" />
+
     <label>Placar exato</label>
     <div class="score-select">
       <select id="scoreHome"></select>
@@ -132,10 +135,7 @@
 
     <div id="confirmBox" style="display:none;background:#111;border:1px solid #fff;border-radius:10px;padding:12px;margin-top:10px;font-size:14px"></div>
 
-    <div class="bets">
-      <strong>Apostas realizadas:</strong>
-      <ul id="betList"></ul>
-    </div>
+    
   </div>
 
   <script>
@@ -155,8 +155,8 @@
       list.innerHTML = '';
 
       Object.values(data).forEach(bet => {
-        total += bet.value;
-        const li = document.createElement('li');
+        total += Number(bet.value);
+      });
         li.innerText = `${bet.name} → ${bet.score} (R$ ${bet.value})`;
         list.appendChild(li);
       });
@@ -167,6 +167,7 @@
     // Envia aposta
     function addBet() {
       const name = document.getElementById('name').value.trim();
+      const whatsapp = document.getElementById('whatsapp').value.trim();
       const score = `${home.value} x ${away.value}`;
       const value = Number(document.getElementById('value').value);
 
@@ -177,6 +178,7 @@
 
       firebaseAPI.push(firebaseAPI.betsRef, {
         name,
+        whatsapp,
         score,
         value,
         createdAt: Date.now()
