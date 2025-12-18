@@ -73,6 +73,7 @@
 
     input, select, button {
       width: 100%;
+      box-sizing: border-box;
       padding: 12px;
       border-radius: 8px;
       border: 1px solid #fff;
@@ -108,7 +109,7 @@
   <div class="container">
     <h1>Amigos Bet</h1>
 
-    <div class="game">⚽ Vasco x Corinthians</div>
+    <div class="game">⚽ Vasco x Corinthians<br><small>🕘 21:30</small></div>
 
     <div class="prize" id="prize">Prêmio atual: R$ 0,00</div>
 
@@ -127,7 +128,9 @@
       <option value="10">R$ 10</option>
     </select>
 
-    <button onclick="addBet()">Fazer aposta</button>
+    <button onclick="addBet()">Confirmar aposta</button>
+
+    <div id="confirmBox" style="display:none;background:#111;border:1px solid #fff;border-radius:10px;padding:12px;margin-top:10px;font-size:14px"></div>
 
     <div class="bets">
       <strong>Apostas realizadas:</strong>
@@ -180,6 +183,22 @@
       });
 
       document.getElementById('name').value = '';
+
+      // confirmação elaborada + cupom
+      const confirm = document.getElementById('confirmBox');
+      const text = `🎟️ CUPOM AMIGOS BET
+👤 ${name}
+⚽ Vasco x Corinthians
+📊 Placar: ${score}
+💰 Valor: R$ ${value}
+🕘 Jogo às 21:30`;
+
+      confirm.style.display = 'block';
+      confirm.innerHTML = `
+        <strong>Aposta realizada com sucesso! ✅</strong><br><br>
+        <pre style="white-space:pre-wrap">${text}</pre>
+        <a href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" style="color:white;text-decoration:underline">Compartilhar no WhatsApp</a>
+      `;;
     }
   </script>
 </body>
